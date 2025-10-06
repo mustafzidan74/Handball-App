@@ -74,4 +74,3 @@ add_action('init', function() {
 
 // ================= Register settings =================
 // Settings registration is handled in includes/admin-options.php
-

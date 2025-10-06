@@ -1,5 +1,4 @@
-
-<?php 
+<?php
 // Hide Header And Footer In pages
 // Add custom meta boxes to the page editor
 function custom_page_meta_boxes() {
