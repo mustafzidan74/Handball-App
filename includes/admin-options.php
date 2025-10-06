@@ -99,14 +99,12 @@ add_action('admin_menu', function() {
     );
 });
 
-add_action('admin_init', function() {
-    register_setting('handball_options_group', 'handball_options');
-});
+// Settings are handled manually in the form processing
+// No need to register with WordPress settings API since we're not using options.php
 
 if (!function_exists('handball_handle_json_upload')) { function handball_handle_json_upload() {
     if (!current_user_can('manage_options')) return;
     if (!isset($_FILES['handball_service_json']) || empty($_FILES['handball_service_json']['name'])) return;
-    check_admin_referer('handball_options_save');
     $required = 'handball-notifications-firebase-adminsdk-djle4-ebd601aedf.json';
     $file = $_FILES['handball_service_json'];
     if ($file['name'] !== $required) {
@@ -125,17 +123,40 @@ if (!function_exists('handball_handle_json_upload')) { function handball_handle_
 }
 
 function handball_render_options_page() {
-    if (isset($_FILES['handball_service_json'])) {
-        handball_handle_json_upload();
+    // Handle form submission
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && current_user_can('manage_options')) {
+        // Check if this is our custom form submission
+        if (isset($_POST['handball_submit']) && wp_verify_nonce($_POST['handball_nonce'], 'handball_options_save')) {
+            // Handle file upload first
+            if (isset($_FILES['handball_service_json'])) {
+                handball_handle_json_upload();
+            }
+            
+            // Handle settings save
+            if (isset($_POST['handball_options'])) {
+                update_option('handball_options', $_POST['handball_options']);
+                add_settings_error('handball_options', 'handball_saved', __('Settings saved.', 'handball'), 'updated');
+            }
+            
+            // Redirect to prevent resubmission
+            wp_redirect(add_query_arg('updated', 'true', $_SERVER['REQUEST_URI']));
+            exit;
+        }
     }
+    
+    // Show update message if redirected after save
+    if (isset($_GET['updated']) && $_GET['updated'] === 'true') {
+        add_settings_error('handball_options', 'handball_saved', __('Settings saved.', 'handball'), 'updated');
+    }
+    
     $s = handball_get_settings();
     ?>
     <div class="wrap">
       <h1><?php _e('Handball Options','handball'); ?></h1>
       <?php settings_errors('handball_options'); ?>
-      <form method="post" action="options.php" enctype="multipart/form-data">
-        <?php settings_fields('handball_options_group'); ?>
-        <?php wp_nonce_field('handball_options_save'); ?>
+      <form method="post" action="" enctype="multipart/form-data">
+        <input type="hidden" name="handball_nonce" value="<?php echo wp_create_nonce('handball_options_save'); ?>">
+        <input type="hidden" name="handball_submit" value="1">
 
         <h2><?php _e('Notifications','handball'); ?></h2>
         <table class="form-table" role="presentation">
@@ -206,7 +227,9 @@ function handball_render_options_page() {
           ?>
         </table>
 
-        <?php submit_button(); ?>
+        <p class="submit">
+          <input type="submit" name="submit" id="submit" class="button button-primary" value="<?php _e('Save Changes', 'handball'); ?>">
+        </p>
       </form>
     </div>
     <?php
