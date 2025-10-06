@@ -36,57 +36,10 @@ define('HANDBALL_PLUGIN_PATH', plugin_dir_path(__FILE__));
 define('HANDBALL_PLUGIN_URL', plugin_dir_url(__FILE__));
 
 // ================= Settings helpers =================
-function handball_get_settings() {
-    $defaults = [
-        'project_id' => 'handball-notifications',
-        'topic_ar'   => 'new_matches_ar_demo',
-        'topic_en'   => 'new_matches_en_demo',
-        'apis_enabled' => []
-    ];
-    $opt = get_option('handball_options', []);
-    return wp_parse_args($opt, $defaults);
-}
-
-function handball_get_topic() {
-    $s = handball_get_settings();
-    $locale = function_exists('determine_locale') ? determine_locale() : get_locale();
-    return (strpos($locale, 'ar') === 0) ? $s['topic_ar'] : $s['topic_en'];
-}
-
-function handball_get_service_json_path() {
-    $filename = 'handball-notifications-firebase-adminsdk-djle4-ebd601aedf.json';
-    $path = HANDBALL_PLUGIN_PATH . 'notifications/' . $filename;
-    return file_exists($path) ? $path : '';
-}
+// Functions are defined in includes/admin-options.php
 
 // ================= Handle JSON upload =================
-function handball_handle_json_upload() {
-    if (empty($_FILES['handball_service_json']['tmp_name'])) {
-        add_settings_error('handball_options', 'handball_json_missing', __('No file uploaded.', 'handball'), 'error');
-        return;
-    }
-
-    $file = $_FILES['handball_service_json'];
-    $required = 'handball-notifications-firebase-adminsdk-djle4-ebd601aedf.json';
-
-    if ($file['name'] !== $required) {
-        add_settings_error('handball_options', 'handball_json_name', __('Incorrect file name. It must be exactly: ', 'handball') . $required, 'error');
-        return;
-    }
-
-    $dest_dir = HANDBALL_PLUGIN_PATH . 'notifications/';
-    if (!file_exists($dest_dir)) {
-        wp_mkdir_p($dest_dir);
-    }
-
-    $dest = $dest_dir . $required;
-    if (!move_uploaded_file($file['tmp_name'], $dest)) {
-        add_settings_error('handball_options', 'handball_json_move', __('Failed to move JSON file to plugin notifications folder.', 'handball'), 'error');
-        return;
-    }
-
-    add_settings_error('handball_options', 'handball_json_ok', __('JSON uploaded successfully to plugin notifications folder.', 'handball'), 'updated');
-}
+// Function is defined in includes/admin-options.php
 
 // ================= Include APIs conditionally =================
 add_action('init', function() {
@@ -120,9 +73,5 @@ add_action('init', function() {
 
 
 // ================= Register settings =================
-add_action('admin_init', function() {
-    register_setting('handball_options_group', 'handball_options');
-});
-
-// ================= Options page renderer =================
+// Settings registration is handled in includes/admin-options.php
 

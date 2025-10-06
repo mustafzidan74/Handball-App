@@ -106,7 +106,6 @@ add_action('admin_init', function() {
 if (!function_exists('handball_handle_json_upload')) { function handball_handle_json_upload() {
     if (!current_user_can('manage_options')) return;
     if (!isset($_FILES['handball_service_json']) || empty($_FILES['handball_service_json']['name'])) return;
-    check_admin_referer('handball_options_save');
     $required = 'handball-notifications-firebase-adminsdk-djle4-ebd601aedf.json';
     $file = $_FILES['handball_service_json'];
     if ($file['name'] !== $required) {
@@ -125,16 +124,28 @@ if (!function_exists('handball_handle_json_upload')) { function handball_handle_
 }
 
 function handball_render_options_page() {
-    if (isset($_FILES['handball_service_json'])) {
-        handball_handle_json_upload();
+    // Handle form submission
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && current_user_can('manage_options')) {
+        check_admin_referer('handball_options_save');
+        
+        // Handle file upload first
+        if (isset($_FILES['handball_service_json'])) {
+            handball_handle_json_upload();
+        }
+        
+        // Handle settings save
+        if (isset($_POST['handball_options'])) {
+            update_option('handball_options', $_POST['handball_options']);
+            add_settings_error('handball_options', 'handball_saved', __('Settings saved.', 'handball'), 'updated');
+        }
     }
+    
     $s = handball_get_settings();
     ?>
     <div class="wrap">
       <h1><?php _e('Handball Options','handball'); ?></h1>
       <?php settings_errors('handball_options'); ?>
-      <form method="post" action="options.php" enctype="multipart/form-data">
-        <?php settings_fields('handball_options_group'); ?>
+      <form method="post" action="" enctype="multipart/form-data">
         <?php wp_nonce_field('handball_options_save'); ?>
 
         <h2><?php _e('Notifications','handball'); ?></h2>
